@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#767677" />
+      <stop offset="100%" stop-color="#929292" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="#f7f7f7" />
+  
+  <!-- Notebook Icon (Modified Jupyter-like) -->
+  <g transform="translate(85, 85) scale(0.65)">
+    <path d="M256,66.4c104.9,0,189.6,84.7,189.6,189.6S360.9,445.6,256,445.6S66.4,360.9,66.4,256S151.1,66.4,256,66.4z" 
+          fill="#F37726" />
+    <path d="M352.5,256c0,53.3-43.2,96.5-96.5,96.5s-96.5-43.2-96.5-96.5s43.2-96.5,96.5-96.5S352.5,202.7,352.5,256z" 
+          fill="#FFFFFF" />
+    <circle cx="183" cy="183" r="10" fill="#F37726" />
+    <circle cx="183" cy="329" r="10" fill="#F37726" />
+    <circle cx="329" cy="183" r="10" fill="#F37726" />
+    <circle cx="329" cy="329" r="10" fill="#F37726" />
+  </g>
+  
+  <!-- MCP Connection Lines -->
+  <g stroke="#3771A1" stroke-width="6" fill="none">
+    <path d="M256,60 L256,120" />
+    <path d="M256,392 L256,452" />
+    <path d="M60,256 L120,256" />
+    <path d="M392,256 L452,256" />
+    <path d="M115,115 L155,155" />
+    <path d="M357,357 L397,397" />
+    <path d="M115,397 L155,357" />
+    <path d="M357,155 L397,115" />
+  </g>
+  
+  <!-- Center "MCP" Text -->
+  <g>
+    <text x="256" y="266" font-family="Arial, sans-serif" font-weight="bold" font-size="48" 
+          fill="#3771A1" text-anchor="middle">MCP</text>
+  </g>
+</svg> 

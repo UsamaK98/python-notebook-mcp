@@ -1,0 +1,8 @@
+This is a placeholder for the PNG version of the logo. 
+In a real scenario, you would convert the SVG to PNG using a tool like:
+- Inkscape
+- GIMP
+- Online SVG to PNG converter
+- Node.js scripts with libraries like sharp
+
+The file should be a 512x512 pixel PNG with a transparent background. 

@@ -1,8 +1,13 @@
-# Python Notebook MCP
-
-> MCP server enabling AI assistants to interact with Jupyter notebooks through the Model Context Protocol.
-
-[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+<div align="center">
+  <img src="assets/notebook-mcp-logo.svg" alt="Python Notebook MCP Logo" width="200"/>
+  <h1>Python Notebook MCP</h1>
+  <p>MCP server enabling AI assistants to interact with Jupyter notebooks through the Model Context Protocol.</p>
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"/></a>
+    <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+"/>
+    <img src="https://img.shields.io/badge/MCP-Compatible-orange.svg" alt="MCP Compatible"/>
+  </p>
+</div>
 
 ## 🚀 Features
 
