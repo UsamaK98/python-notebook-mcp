@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/notebook-mcp-logo.svg" alt="Python Notebook MCP Logo" width="200"/>
+  <img src="assets/notebook_mcp-logo.png" alt="Python Notebook MCP Logo" width="200"/>
   <h1>Python Notebook MCP</h1>
   <p>MCP server enabling AI assistants to interact with Jupyter notebooks through the Model Context Protocol.</p>
   <p>
