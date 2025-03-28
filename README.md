@@ -45,8 +45,8 @@ pip install -r requirements.txt
 {
   "mcpServers": {
     "jupyter": {
-      "command": "python",
-      "args": ["C:\\full\\path\\to\\server.py"],
+      "command": "uv",
+      "args": ["run", "--with", "fastmcp", "fastmcp", "run", "C:\\full\\path\\to\\server.py"],
       "autoApprove": ["initialize_workspace", "list_notebooks"]
     }
   }
@@ -61,8 +61,8 @@ Add to `.cursor/mcp.json`:
 {
   "mcpServers": {
     "jupyter": {
-      "command": "python",
-      "args": ["C:\\full\\path\\to\\server.py"]
+      "command": "uv",
+      "args": ["run", "--with", "fastmcp", "fastmcp", "run", "C:\\full\\path\\to\\server.py"]
     }
   }
 }
