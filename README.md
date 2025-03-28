@@ -1,153 +1,162 @@
 # Python Notebook MCP
 
-An MCP server for interacting with Jupyter notebooks from Claude and other MCP clients.
+An MCP server for interacting with Jupyter notebooks from Claude and other MCP clients. This tool allows you to create, read, edit, and manage Jupyter notebooks directly through AI assistants using the Model Context Protocol.
 
 ## Features
 
+- Create new Jupyter notebooks
 - Read notebook contents and individual cells
-- Edit cells
-- View cell outputs including images
-- Add new cells
+- Edit existing cells 
+- Add new cells (code or markdown)
+- View cell outputs including text, data, and images
 - Set custom workspace directory
 
-## How It Works
+## Prerequisites
 
-This MCP server uses a workspace-based approach to resolve relative paths. When the server starts, it defaults to the current working directory. To ensure notebooks are created in the right location, use the `set_workspace` tool first to point to your project directory.
+- Python 3.8+
+- `fastmcp` Python package
+- `nbformat` Python package
 
 ## Installation
 
-1. Install dependencies:
+1. Clone this repository:
+```bash
+git clone https://github.com/usamakhatab/python-notebook-mcp.git
+cd python-notebook-mcp
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Run the server:
+3. Run the server:
 ```bash
 python server.py
 ```
 
-## Configuration & Usage
+## Usage
 
-### Setting the Workspace
+### Important: Setting the Workspace
 
-When using this MCP server, always start by setting the workspace to your project directory:
+When using this MCP server, **always start by initializing the workspace** with the `initialize_workspace` tool:
 
 ```
-set_workspace("/path/to/your/project")
+initialize_workspace("C:\\path\\to\\your\\project")
 ```
 
-This will ensure all subsequent operations use the correct paths and create notebooks in your project directory rather than in the client's directory.
+- You **must** provide the full absolute path to your project directory
+- Relative paths like "." or "./" are not accepted
+- This ensures all notebook operations use the correct location
 
-### Claude Desktop Configuration
+### Core Operations
 
-To configure this MCP server for Claude Desktop:
+All operations below require calling `initialize_workspace` first:
 
-1. Open Claude Desktop
-2. Go to Settings → Tools → Add Tool → Local Tool
-3. Fill in the form:
-   - Name: Jupyter Notebook
-   - Description: Work with Jupyter notebooks
-   - Command: `python`
-   - Arguments: `path/to/server.py`
-   - Working Directory: Path to where server.py is located
+**Create a new notebook:**
+```
+create_notebook("my_notebook.ipynb", "My Notebook Title")
+```
 
-For the configuration file in Claude Desktop (usually located at `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+**Read a notebook:**
+```
+read_notebook("my_notebook.ipynb")
+```
+
+**Add a new cell:**
+```
+add_cell("my_notebook.ipynb", "print('Hello, world!')", "code")
+```
+
+**Read a specific cell:**
+```
+read_cell("my_notebook.ipynb", 0)  # Read the first cell
+```
+
+**Edit a cell:**
+```
+edit_cell("my_notebook.ipynb", 0, "# This is an updated cell")
+```
+
+**View cell outputs:**
+```
+read_cell_output("my_notebook.ipynb", 1)  # Get outputs for the second cell
+```
+
+## Configuration
+
+### Claude Desktop
+
+To configure this server for Claude Desktop:
+
+1. Open Claude Desktop settings
+2. Navigate to Developer options and edit the configuration file
+3. Add the following to your `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "jupyter": {
       "command": "python",
-      "args": ["path/to/server.py"],
+      "args": ["C:\\full\\path\\to\\server.py"],
       "disabled": false,
-      "autoApprove": ["set_workspace", "get_workspace", "list_notebooks"]
+      "autoApprove": ["initialize_workspace", "list_notebooks"]
     }
   }
 }
 ```
 
-The `autoApprove` field allows specified tools to run without user confirmation, which is helpful for workspace setup.
+### Cursor IDE
 
-### Cursor IDE Configuration
+For Cursor IDE, create or edit `.cursor/mcp.json` in your project:
 
-For Cursor IDE, add this to your configuration file (`.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "jupyter": {
+      "command": "uv",
+      "args": ["run", "--with", "fastmcp", "fastmcp", "run", "C:\\full\\path\\to\\server.py"]
+    }
+  }
+}
+```
+
+If you don't have `uv` installed, you can use this simpler configuration:
 
 ```json
 {
   "mcpServers": {
     "jupyter": {
       "command": "python",
-      "args": ["path/to/server.py"],
-      "cwd": "${workspaceFolder}"
+      "args": ["C:\\full\\path\\to\\server.py"]
     }
   }
-}
-```
-
-When using Cursor, you should still call `set_workspace` with your project path, as Cursor might run the MCP server from its installation directory.
-
-### Windsurf IDE Configuration
-
-For Windsurf IDE, add this to your configuration:
-
-```json
-{
-  "tools": [
-    {
-      "name": "Python Notebook MCP",
-      "type": "mcp",
-      "command": "python path/to/server.py",
-      "workingDir": "${workspaceFolder}"
-    }
-  ]
 }
 ```
 
 ## Available Tools
 
-- `set_workspace`: Set the workspace directory for resolving relative paths
-- `get_workspace`: Get the current workspace directory
-- `list_notebooks`: List all notebook files in a directory
-- `read_notebook`: Read the contents of a notebook
-- `read_cell`: Read a specific cell from a notebook
-- `edit_cell`: Edit a specific cell in a notebook
-- `read_notebook_outputs`: Read all outputs from a notebook
-- `read_cell_output`: Read output from a specific cell
-- `add_cell`: Add a new cell to a notebook
-
-## Usage Examples
-
-Set workspace:
-```
-set_workspace("/path/to/your/project")
-```
-
-Create or open a notebook:
-```
-# The notebook will be created if it doesn't exist
-read_notebook("my_notebook.ipynb")
-```
-
-Add a new cell:
-```
-add_cell("my_notebook.ipynb", "print('Hello, world!')", "code")
-```
-
-Read a cell:
-```
-read_cell("my_notebook.ipynb", 0)
-```
-
-Edit a cell:
-```
-edit_cell("my_notebook.ipynb", 0, "# This is an updated cell")
-```
+| Tool | Description |
+|------|-------------|
+| `initialize_workspace` | **MUST BE CALLED FIRST!** Set the workspace directory using a full absolute path |
+| `list_notebooks` | List all notebook files in a directory |
+| `create_notebook` | Create a new Jupyter notebook |
+| `read_notebook` | Read the contents of a notebook |
+| `read_cell` | Read a specific cell from a notebook |
+| `edit_cell` | Edit a specific cell in a notebook |
+| `read_notebook_outputs` | Read all outputs from a notebook |
+| `read_cell_output` | Read output from a specific cell |
+| `add_cell` | Add a new cell to a notebook |
 
 ## Troubleshooting
 
-If notebooks are being created in the wrong directory:
+If you encounter issues:
 
-1. Check where the server is running by using `get_workspace()`
-2. Use `set_workspace()` to explicitly set the correct directory
-3. Use absolute paths when creating notebooks if needed
-4. Restart the server if necessary 
+1. **Wrong directory for notebooks:** Always use `initialize_workspace()` first with the full absolute path
+2. **Server not connecting:** Check paths in your configuration file and ensure they are absolute
+3. **"Already running asyncio in this thread" error:** Restart your terminal and try again
+4. **Permissions issues:** Ensure the directory is writable
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 

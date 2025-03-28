@@ -1,3 +1,26 @@
+"""
+MIT License
+
+Copyright (c) 2024 Usama Khatab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
 import os
 import json
 import base64
@@ -8,9 +31,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 from mcp.server.fastmcp import FastMCP, Context
 
-# Set default workspace to current directory
+# Set default workspace to current directory but don't consider it initialized
 WORKSPACE_DIR = os.getcwd()
-print(f"Default workspace directory: {WORKSPACE_DIR}")
+print(f"Default workspace directory (uninitialized): {WORKSPACE_DIR}")
+
+# Flag to track if workspace has been explicitly set
+WORKSPACE_INITIALIZED = False
 
 # Create an MCP server
 mcp = FastMCP("Jupyter Notebook MCP")
@@ -30,22 +56,41 @@ def get_notebook_content(filepath: str) -> dict:
     resolved_path = resolve_path(filepath)
     
     if not os.path.exists(resolved_path):
-        # Create an empty notebook if it doesn't exist
-        directory = os.path.dirname(resolved_path)
-        if directory and not os.path.exists(directory):
-            os.makedirs(directory, exist_ok=True)
-            
-        nb = new_notebook()
-        nb.cells.append(new_markdown_cell("# New Notebook"))
-        nb.cells.append(new_code_cell("# Your code here"))
-        
-        with open(resolved_path, 'w', encoding='utf-8') as f:
-            nbformat.write(nb, f)
-        print(f"Created new notebook at: {resolved_path}")
+        raise FileNotFoundError(f"Notebook file not found: {resolved_path}")
     
     with open(resolved_path, 'r', encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
     return nb
+
+def create_new_notebook(filepath: str, title: str = "New Notebook") -> dict:
+    """Create a new notebook file if it doesn't exist."""
+    resolved_path = resolve_path(filepath)
+    
+    # Create directory if it doesn't exist
+    directory = os.path.dirname(resolved_path)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+    
+    # Create a new notebook
+    nb = new_notebook()
+    nb.cells.append(new_markdown_cell(f"# {title}"))
+    nb.cells.append(new_code_cell("# Your code here"))
+    
+    # Write the notebook to file
+    with open(resolved_path, 'w', encoding='utf-8') as f:
+        nbformat.write(nb, f)
+    
+    print(f"Created new notebook at: {resolved_path}")
+    return nb
+
+def ensure_notebook_exists(filepath: str, title: str = "New Notebook") -> dict:
+    """Ensure a notebook exists, creating it if necessary."""
+    resolved_path = resolve_path(filepath)
+    
+    if not os.path.exists(resolved_path):
+        return create_new_notebook(resolved_path, title)
+    
+    return get_notebook_content(resolved_path)
 
 def notebook_to_dict(nb) -> Dict:
     """Convert notebook object to a safe dictionary representation."""
@@ -190,44 +235,70 @@ def process_cell_output(output: Any) -> Dict:
 
 # Tool implementations
 @mcp.tool()
-def set_workspace(directory: str) -> str:
+def initialize_workspace(directory: str) -> str:
     """
-    Set the workspace directory for resolving relative paths.
+    IMPORTANT: Call this first! Initialize the workspace directory for this session.
+    
+    This must be called before using any other tools to ensure notebooks are created
+    in the correct location. You must provide a FULL ABSOLUTE PATH to your project folder
+    where notebooks should be stored. Do not use relative paths.
     
     Args:
-        directory: The directory to set as the workspace
+        directory: The FULL ABSOLUTE PATH to set as the workspace (required)
         
     Returns:
-        Confirmation message
+        Confirmation message with list of any notebooks found
+    
+    Raises:
+        ValueError: If directory is not provided, doesn't exist, is not a directory, or is a relative path
     """
-    global WORKSPACE_DIR
+    global WORKSPACE_DIR, WORKSPACE_INITIALIZED
+    
+    if not directory or not directory.strip():
+        raise ValueError("ERROR: You must provide a directory path. Please provide the FULL ABSOLUTE PATH to your project directory where notebook files are located.")
+    
+    # Check for relative paths
+    if directory in [".", "./"] or directory.startswith("./") or directory.startswith("../"):
+        raise ValueError("ERROR: Relative paths like '.' or './' are not allowed. Please provide the FULL ABSOLUTE PATH to your project directory.")
     
     # Check if directory exists
     if not os.path.exists(directory):
-        raise ValueError(f"Directory does not exist: {directory}")
+        raise ValueError(f"ERROR: Directory does not exist: {directory}")
     
     # Check if it's a directory
     if not os.path.isdir(directory):
-        raise ValueError(f"Not a directory: {directory}")
+        raise ValueError(f"ERROR: Not a directory: {directory}")
     
     # Set the workspace directory
     WORKSPACE_DIR = directory
-    print(f"Workspace directory set to: {WORKSPACE_DIR}")
-    return f"Workspace directory set to: {WORKSPACE_DIR}"
-
-@mcp.tool()
-def get_workspace() -> str:
-    """
-    Get the current workspace directory.
+    WORKSPACE_INITIALIZED = True
+    print(f"Workspace initialized at: {WORKSPACE_DIR}")
     
-    Returns:
-        The current workspace directory
-    """
-    return WORKSPACE_DIR
+    # List the notebooks in the workspace to confirm
+    notebooks = []
+    for path in Path(WORKSPACE_DIR).rglob('*.ipynb'):
+        notebooks.append(os.path.relpath(path, WORKSPACE_DIR))
+    
+    if notebooks:
+        notebook_list = "\n- " + "\n- ".join(notebooks)
+        return f"Workspace initialized at: {WORKSPACE_DIR}\nNotebooks found:{notebook_list}"
+    else:
+        return f"Workspace initialized at: {WORKSPACE_DIR}\nNo notebooks found."
+
+def check_workspace_initialized() -> None:
+    """Check if workspace is initialized and raise error if not."""
+    if not WORKSPACE_INITIALIZED:
+        raise ValueError("ERROR: Workspace not initialized. Please call initialize_workspace() first with the FULL ABSOLUTE PATH to the directory where your notebook files are located.")
 
 @mcp.tool()
 def list_notebooks(directory: str = ".") -> List[str]:
-    """List all notebook files in the specified directory."""
+    """
+    List all notebook files in the specified directory.
+    
+    Note: You must call initialize_workspace() first.
+    """
+    check_workspace_initialized()
+    
     resolved_directory = resolve_path(directory)
     notebook_files = []
     
@@ -237,9 +308,35 @@ def list_notebooks(directory: str = ".") -> List[str]:
     return notebook_files
 
 @mcp.tool()
+def create_notebook(filepath: str, title: str = "New Notebook") -> str:
+    """
+    Create a new Jupyter notebook.
+    
+    Note: You must call initialize_workspace() first with your project directory.
+    
+    Args:
+        filepath: Path where the notebook should be created
+        title: Title for the notebook (used in the first markdown cell)
+    
+    Returns:
+        Path to the created notebook
+    """
+    check_workspace_initialized()
+    
+    resolved_path = resolve_path(filepath)
+    
+    if os.path.exists(resolved_path):
+        return f"Notebook already exists at {resolved_path}"
+    
+    create_new_notebook(filepath, title)
+    return f"Created notebook at {resolved_path}"
+
+@mcp.tool()
 def read_notebook(filepath: str) -> Dict:
     """
     Read the contents of a notebook.
+    
+    Note: You must call initialize_workspace() first with your project directory.
     
     Args:
         filepath: Path to the notebook file
@@ -247,13 +344,21 @@ def read_notebook(filepath: str) -> Dict:
     Returns:
         The notebook content
     """
-    nb = get_notebook_content(filepath)
+    check_workspace_initialized()
+    
+    try:
+        nb = get_notebook_content(filepath)
+    except FileNotFoundError:
+        nb = create_new_notebook(filepath)
+    
     return notebook_to_dict(nb)
 
 @mcp.tool()
 def read_cell(filepath: str, cell_index: int) -> Dict:
     """
     Read a specific cell from a notebook.
+    
+    Note: You must call initialize_workspace() first with your project directory.
     
     Args:
         filepath: Path to the notebook file
@@ -262,7 +367,12 @@ def read_cell(filepath: str, cell_index: int) -> Dict:
     Returns:
         The cell content
     """
-    nb = get_notebook_content(filepath)
+    check_workspace_initialized()
+    
+    try:
+        nb = get_notebook_content(filepath)
+    except FileNotFoundError:
+        nb = create_new_notebook(filepath)
     
     if cell_index < 0 or cell_index >= len(nb.cells):
         raise IndexError(f"Cell index out of range: {cell_index}, notebook has {len(nb.cells)} cells")
@@ -275,6 +385,8 @@ def edit_cell(filepath: str, cell_index: int, content: str) -> str:
     """
     Edit a specific cell in a notebook.
     
+    Note: You must call initialize_workspace() first with your project directory.
+    
     Args:
         filepath: Path to the notebook file
         cell_index: Index of the cell to edit
@@ -283,7 +395,12 @@ def edit_cell(filepath: str, cell_index: int, content: str) -> str:
     Returns:
         Confirmation message
     """
-    nb = get_notebook_content(filepath)
+    check_workspace_initialized()
+    
+    try:
+        nb = get_notebook_content(filepath)
+    except FileNotFoundError:
+        nb = create_new_notebook(filepath)
     
     if cell_index < 0 or cell_index >= len(nb.cells):
         raise IndexError(f"Cell index out of range: {cell_index}, notebook has {len(nb.cells)} cells")
@@ -304,13 +421,22 @@ def read_notebook_outputs(filepath: str) -> List[Dict]:
     """
     Read all outputs from a notebook.
     
+    Note: You must call initialize_workspace() first with your project directory.
+    
     Args:
         filepath: Path to the notebook file
     
     Returns:
         List of all cell outputs
     """
-    nb = get_notebook_content(filepath)
+    check_workspace_initialized()
+    
+    try:
+        nb = get_notebook_content(filepath)
+    except FileNotFoundError:
+        nb = create_new_notebook(filepath)
+        return []  # New notebook has no outputs
+    
     outputs = []
     
     for i, cell in enumerate(nb.cells):
@@ -331,6 +457,8 @@ def read_cell_output(filepath: str, cell_index: int) -> List[Dict]:
     """
     Read output from a specific cell.
     
+    Note: You must call initialize_workspace() first with your project directory.
+    
     Args:
         filepath: Path to the notebook file
         cell_index: Index of the cell
@@ -338,7 +466,13 @@ def read_cell_output(filepath: str, cell_index: int) -> List[Dict]:
     Returns:
         The cell's output
     """
-    nb = get_notebook_content(filepath)
+    check_workspace_initialized()
+    
+    try:
+        nb = get_notebook_content(filepath)
+    except FileNotFoundError:
+        nb = create_new_notebook(filepath)
+        return []  # New notebook has no outputs
     
     if cell_index < 0 or cell_index >= len(nb.cells):
         raise IndexError(f"Cell index out of range: {cell_index}, notebook has {len(nb.cells)} cells")
@@ -359,6 +493,8 @@ def add_cell(filepath: str, content: str, cell_type: str = "code", index: Option
     """
     Add a new cell to a notebook.
     
+    Note: You must call initialize_workspace() first with your project directory.
+    
     Args:
         filepath: Path to the notebook file
         content: Content for the new cell
@@ -368,7 +504,12 @@ def add_cell(filepath: str, content: str, cell_type: str = "code", index: Option
     Returns:
         Confirmation message
     """
-    nb = get_notebook_content(filepath)
+    check_workspace_initialized()
+    
+    try:
+        nb = get_notebook_content(filepath)
+    except FileNotFoundError:
+        nb = create_new_notebook(filepath)
     
     if cell_type.lower() == 'code':
         new_cell = new_code_cell(content)
@@ -401,7 +542,17 @@ async def main():
     print(f"Working directory: {os.getcwd()}")
     
     try:
-        await mcp.serve()
+        await mcp.run()
+    except AttributeError:
+        # Fallback for different MCP versions
+        try:
+            await mcp.start()
+        except AttributeError:
+            try:
+                await mcp.serve()
+            except Exception as e:
+                print(f"Error starting server with various methods: {str(e)}")
+                sys.exit(1)
     except Exception as e:
         print(f"Error starting server: {str(e)}")
         sys.exit(1)
