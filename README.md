@@ -26,14 +26,46 @@ cd python-notebook-mcp
 ```
 
 2. Install dependencies:
+
+Using pip:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Run the server:
+Using uv (recommended for faster dependency resolution):
+```bash
+# Install uv if you don't have it
+# Windows: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+# MacOS/Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies
+uv pip install -r requirements.txt
+```
+
+## Running the Server
+
+### Standard Mode
+
 ```bash
 python server.py
 ```
+
+### Development Mode (with FastMCP dev server)
+
+For debugging and development:
+
+```bash
+# Using fastmcp directly
+fastmcp dev server.py
+
+# Using Python module
+python -m fastmcp dev server.py
+
+# Using uv with fastmcp
+uv run fastmcp dev server.py
+```
+
+Development mode provides more verbose logging and automatic reloading on file changes.
 
 ## Usage
 
@@ -83,7 +115,7 @@ edit_cell("my_notebook.ipynb", 0, "# This is an updated cell")
 read_cell_output("my_notebook.ipynb", 1)  # Get outputs for the second cell
 ```
 
-## Configuration
+## Integration with AI Tools
 
 ### Claude Desktop
 
@@ -148,6 +180,49 @@ If you don't have `uv` installed, you can use this simpler configuration:
 | `read_cell_output` | Read output from a specific cell |
 | `add_cell` | Add a new cell to a notebook |
 
+## Development
+
+### Creating a Virtual Environment
+
+For development, it's recommended to use a virtual environment:
+
+Using venv:
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# MacOS/Linux
+source venv/bin/activate
+```
+
+Using uv:
+```bash
+uv venv
+# Windows
+.venv\Scripts\activate
+# MacOS/Linux
+source .venv/bin/activate
+```
+
+### Debugging
+
+1. Enable verbose logging by adding this at the top of `server.py`:
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
+2. Run the server in development mode:
+```bash
+fastmcp dev server.py
+```
+
+3. Check the stdout for detailed logs about:
+   - Tool registrations
+   - Tool calls
+   - Error messages
+   - Connection status
+
 ## Troubleshooting
 
 If you encounter issues:
@@ -156,6 +231,12 @@ If you encounter issues:
 2. **Server not connecting:** Check paths in your configuration file and ensure they are absolute
 3. **"Already running asyncio in this thread" error:** Restart your terminal and try again
 4. **Permissions issues:** Ensure the directory is writable
+5. **Module not found errors:** Make sure all dependencies are installed correctly
+6. **Connection issues:** Try running the server in development mode to see detailed logs
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
