@@ -1,115 +1,153 @@
-# Jupyter Notebook MCP Server
+# Python Notebook MCP
 
-A command-based Model Context Protocol (MCP) server for Jupyter notebooks, enabling local AI deployments (like Claude Desktop) to interact with Jupyter notebooks.
+An MCP server for interacting with Jupyter notebooks from Claude and other MCP clients.
 
 ## Features
 
-- Read, write, and create Jupyter notebooks
-- Add, edit, delete, and execute cells
-- Execute entire notebooks
-- Track and undo operations
-- Compare notebooks
-- Handle outputs with different types (text, errors, data)
-- Atomic file operations with locking
-- Comprehensive error handling
+- Read notebook contents and individual cells
+- Edit cells
+- View cell outputs including images
+- Add new cells
+- Set custom workspace directory
+
+## How It Works
+
+This MCP server uses a workspace-based approach to resolve relative paths. When the server starts, it defaults to the current working directory. To ensure notebooks are created in the right location, use the `set_workspace` tool first to point to your project directory.
 
 ## Installation
 
-1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/jupyter-notebook-mcp.git
-cd jupyter-notebook-mcp
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### Starting the Server
-
-Run the MCP server:
-
+2. Run the server:
 ```bash
-python mcp_server.py
+python server.py
 ```
 
-### Claude Desktop Integration
+## Configuration & Usage
 
-To integrate with Claude Desktop, create a configuration file:
+### Setting the Workspace
+
+When using this MCP server, always start by setting the workspace to your project directory:
+
+```
+set_workspace("/path/to/your/project")
+```
+
+This will ensure all subsequent operations use the correct paths and create notebooks in your project directory rather than in the client's directory.
+
+### Claude Desktop Configuration
+
+To configure this MCP server for Claude Desktop:
+
+1. Open Claude Desktop
+2. Go to Settings → Tools → Add Tool → Local Tool
+3. Fill in the form:
+   - Name: Jupyter Notebook
+   - Description: Work with Jupyter notebooks
+   - Command: `python`
+   - Arguments: `path/to/server.py`
+   - Working Directory: Path to where server.py is located
+
+For the configuration file in Claude Desktop (usually located at `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
 
 ```json
 {
-  "mcp_servers": {
+  "mcpServers": {
     "jupyter": {
       "command": "python",
-      "args": [
-        "/path/to/your/mcp_server.py"
-      ],
-      "env": {
-        "MCP_MODE": "full",
-        "MAX_CELLS": "1000"
-      }
+      "args": ["path/to/server.py"],
+      "disabled": false,
+      "autoApprove": ["set_workspace", "get_workspace", "list_notebooks"]
     }
   }
 }
 ```
 
-Save this as `claude_desktop_config.json` in the appropriate location for your system:
+The `autoApprove` field allows specified tools to run without user confirmation, which is helpful for workspace setup.
 
-- Windows: `%APPDATA%\Claude Desktop\claude_desktop_config.json`
-- macOS: `~/Library/Application Support/Claude Desktop/claude_desktop_config.json`
-- Linux: `~/.config/Claude Desktop/claude_desktop_config.json`
+### Cursor IDE Configuration
+
+For Cursor IDE, add this to your configuration file (`.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "jupyter": {
+      "command": "python",
+      "args": ["path/to/server.py"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
+```
+
+When using Cursor, you should still call `set_workspace` with your project path, as Cursor might run the MCP server from its installation directory.
+
+### Windsurf IDE Configuration
+
+For Windsurf IDE, add this to your configuration:
+
+```json
+{
+  "tools": [
+    {
+      "name": "Python Notebook MCP",
+      "type": "mcp",
+      "command": "python path/to/server.py",
+      "workingDir": "${workspaceFolder}"
+    }
+  ]
+}
+```
 
 ## Available Tools
 
-The MCP server provides the following tools:
+- `set_workspace`: Set the workspace directory for resolving relative paths
+- `get_workspace`: Get the current workspace directory
+- `list_notebooks`: List all notebook files in a directory
+- `read_notebook`: Read the contents of a notebook
+- `read_cell`: Read a specific cell from a notebook
+- `edit_cell`: Edit a specific cell in a notebook
+- `read_notebook_outputs`: Read all outputs from a notebook
+- `read_cell_output`: Read output from a specific cell
+- `add_cell`: Add a new cell to a notebook
 
-1. **read_notebook**: Read the contents of a Jupyter notebook
-2. **write_notebook**: Write content to a Jupyter notebook
-3. **create_notebook**: Create a new Jupyter notebook
-4. **add_cell**: Add a new cell to the notebook
-5. **edit_cell**: Edit the content of an existing cell
-6. **delete_cell**: Delete a cell from the notebook
-7. **execute_cell**: Execute a specific cell and return its output
-8. **get_outputs**: Get outputs from a specific cell
-9. **run_all_cells**: Execute all cells in the notebook in sequence
-10. **undo_last_operation**: Undo the last operation on the notebook
-11. **notebook_diff**: Compare two notebooks and return their differences
+## Usage Examples
 
-## API Reference
+Set workspace:
+```
+set_workspace("/path/to/your/project")
+```
 
-### JSON-RPC 2.0 Protocol
+Create or open a notebook:
+```
+# The notebook will be created if it doesn't exist
+read_notebook("my_notebook.ipynb")
+```
 
-The server uses JSON-RPC 2.0 over STDIO. There are two main methods:
+Add a new cell:
+```
+add_cell("my_notebook.ipynb", "print('Hello, world!')", "code")
+```
 
-- `mcp.list_tools`: List available tools
-- `mcp.use_tool`: Execute a specific tool
+Read a cell:
+```
+read_cell("my_notebook.ipynb", 0)
+```
 
-### Tool Parameters
+Edit a cell:
+```
+edit_cell("my_notebook.ipynb", 0, "# This is an updated cell")
+```
 
-For details on each tool's parameters, see the [tool_definitions.py](tool_definitions.py) file.
+## Troubleshooting
 
-## Error Codes
+If notebooks are being created in the wrong directory:
 
-The server uses standard JSON-RPC 2.0 error codes:
-
-- `-32700`: Parse error
-- `-32600`: Invalid request
-- `-32601`: Method not found
-- `-32602`: Invalid params
-- `-32603`: Internal error
-
-## Security Considerations
-
-This MCP server has full access to the filesystem and can execute arbitrary code through notebook cells. Always run it in a secure environment and validate inputs carefully.
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. 
+1. Check where the server is running by using `get_workspace()`
+2. Use `set_workspace()` to explicitly set the correct directory
+3. Use absolute paths when creating notebooks if needed
+4. Restart the server if necessary 
