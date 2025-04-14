@@ -41,6 +41,32 @@ WORKSPACE_INITIALIZED = False
 # Create an MCP server
 mcp = FastMCP("Jupyter Notebook MCP")
 
+
+# Helper functions for converting Unix paths to Windows paths
+def convert_unix_path(path: str) -> str:
+    """Convert Unix-style paths like /d/Projects to Windows-style paths."""
+    import re
+    # Match pattern like /d/Projects/... or /c/Users/...
+    match = re.match(r'^/([a-zA-Z])(/.*)?$', path)
+    if match:
+        drive_letter = match.group(1)
+        remaining_path = match.group(2) or ''
+        # Convert to Windows path (D:\Projects\...)
+        return f"{drive_letter.upper()}:{remaining_path.replace('/', '\\')}"
+    return path
+
+def resolve_path(path: str) -> str:
+    """Resolve relative paths against the workspace directory."""
+    # Handle Unix-style paths like /d/Projects/...
+    path = convert_unix_path(path)
+    
+    if os.path.isabs(path):
+        return path
+    
+    # Try to resolve against the workspace directory
+    resolved_path = os.path.join(WORKSPACE_DIR, path)
+    return resolved_path
+
 # Helper functions
 def resolve_path(path: str) -> str:
     """Resolve relative paths against the workspace directory."""
@@ -256,6 +282,9 @@ def initialize_workspace(directory: str) -> str:
     
     if not directory or not directory.strip():
         raise ValueError("ERROR: You must provide a directory path. Please provide the FULL ABSOLUTE PATH to your project directory where notebook files are located.")
+    
+    # Convert Unix-style paths to Windows format
+    directory = convert_unix_path(directory)
     
     # Check for relative paths
     if directory in [".", "./"] or directory.startswith("./") or directory.startswith("../"):
