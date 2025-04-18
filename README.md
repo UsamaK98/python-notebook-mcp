@@ -24,7 +24,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/usamakhatab/python-notebook-mcp.git
+git clone https://github.com/UsamaK98/python-notebook-mcp.git
 cd python-notebook-mcp
 
 # Install dependencies with uv (recommended)
