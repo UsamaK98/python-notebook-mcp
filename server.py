@@ -12,7 +12,7 @@ furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
+\
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -44,15 +44,20 @@ mcp = FastMCP("Jupyter Notebook MCP")
 
 # Helper functions for converting Unix paths to Windows paths
 def convert_unix_path(path: str) -> str:
-    """Convert Unix-style paths like /d/Projects to Windows-style paths."""
+    """Convert Unix-style paths like /d/Projects to Windows-style paths (only on Windows)."""
+    # Only perform conversion on Windows
+    if sys.platform != 'win32':
+        return path
+        
     import re
     # Match pattern like /d/Projects/... or /c/Users/...
     match = re.match(r'^/([a-zA-Z])(/.*)?$', path)
     if match:
         drive_letter = match.group(1)
         remaining_path = match.group(2) or ''
-        # Convert to Windows path (D:\Projects\...)
-        return f"{drive_letter.upper()}:{remaining_path.replace('/', '\\')}"
+        # Convert to Windows path (D:\\Projects\\...)
+        windows_path = remaining_path.replace('/', '\\')
+        return f"{drive_letter.upper()}:{windows_path}"
     return path
 
 def resolve_path(path: str) -> str:
@@ -565,20 +570,20 @@ def add_cell(filepath: str, content: str, cell_type: str = "code", index: Option
         raise Exception(f"Failed to update notebook: {str(e)}")
 
 # Main entry point
-async def main():
+def main():
     """Start the MCP server."""
     print("Starting Notebook MCP Server...")
     print(f"Working directory: {os.getcwd()}")
     
     try:
-        await mcp.run()
+        mcp.run()
     except AttributeError:
         # Fallback for different MCP versions
         try:
-            await mcp.start()
+            mcp.start()
         except AttributeError:
             try:
-                await mcp.serve()
+                mcp.serve()
             except Exception as e:
                 print(f"Error starting server with various methods: {str(e)}")
                 sys.exit(1)
@@ -587,5 +592,4 @@ async def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main()) 
+    main() 
