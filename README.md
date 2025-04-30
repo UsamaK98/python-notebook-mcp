@@ -5,6 +5,7 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"/></a>
     <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+"/>
     <img src="https://img.shields.io/badge/MCP-Compatible-orange.svg" alt="MCP Compatible"/>
+    <a href="CodeRabbit Pull Request Reviews"><img src="https://img.shields.io/coderabbit/prs/github/UsamaK98/python-notebook-mcp?utm_source=oss&utm_medium=github&utm_campaign=UsamaK98%2Fpython-notebook-mcp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews"/>
   </p>
 </div>
 
