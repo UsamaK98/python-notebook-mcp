@@ -1,5 +1,3 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/usamak98-python-notebook-mcp-badge.png)](https://mseep.ai/app/usamak98-python-notebook-mcp)
-
 <div align="center">
   <h1>Python Notebook MCP</h1>
   <p>MCP server enabling AI assistants to interact with Jupyter notebooks through the Model Context Protocol.</p>
@@ -7,10 +5,14 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"/></a>
     <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+"/>
     <img src="https://img.shields.io/badge/MCP-Compatible-orange.svg" alt="MCP Compatible"/>
+    <a href="https://mseep.ai/app/286d0c4c-dcec-477b-bc2c-b20d2ce85ef2"><img src="https://mseep.ai/badge.svg" alt="Verified on MseeP"/></a>
     <a href="CodeRabbit Pull Request Reviews"><img src="https://img.shields.io/coderabbit/prs/github/UsamaK98/python-notebook-mcp?utm_source=oss&utm_medium=github&utm_campaign=UsamaK98%2Fpython-notebook-mcp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews"/>
   </p>
 </div>
-
+<div align="center">
+<a href="https://mseep.ai/app/usamak98-python-notebook-mcp"><img src="https://mseep.net/pr/usamak98-python-notebook-mcp-badge.png" alt="MseeP.ai Security Assessment Badge"/></a> 
+</div>
+ 
 This server allows compatible AI assistants (like Cursor or Claude Desktop) to interact with Jupyter Notebook files (.ipynb) on your local machine.
 
 ## 📋 Prerequisites
