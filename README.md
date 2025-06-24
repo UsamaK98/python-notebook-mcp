@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/usamak98-python-notebook-mcp-badge.png)](https://mseep.ai/app/usamak98-python-notebook-mcp)
+
 <div align="center">
   <h1>Python Notebook MCP</h1>
   <p>MCP server enabling AI assistants to interact with Jupyter notebooks through the Model Context Protocol.</p>
