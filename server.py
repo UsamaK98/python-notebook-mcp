@@ -61,26 +61,18 @@ def convert_unix_path(path: str) -> str:
     return path
 
 def resolve_path(path: str) -> str:
-    """Resolve relative paths against the workspace directory."""
-    # Handle Unix-style paths like /d/Projects/...
+    if not isinstance(path, str) or not path:
+        raise ValueError("ERROR: a non-empty path is required.")
     path = convert_unix_path(path)
-    
-    if os.path.isabs(path):
-        return path
-    
-    # Try to resolve against the workspace directory
-    resolved_path = os.path.join(WORKSPACE_DIR, path)
-    return resolved_path
-
-# Helper functions
-def resolve_path(path: str) -> str:
-    """Resolve relative paths against the workspace directory."""
-    if os.path.isabs(path):
-        return path
-    
-    # Try to resolve against the workspace directory
-    resolved_path = os.path.join(WORKSPACE_DIR, path)
-    return resolved_path
+    candidate = path if os.path.isabs(path) else os.path.join(WORKSPACE_DIR, path)
+    real_workspace = os.path.realpath(WORKSPACE_DIR)
+    real_target = os.path.realpath(candidate)
+    if real_target != real_workspace and not real_target.startswith(real_workspace + os.sep):
+        raise ValueError(
+            f"ERROR: path {path!r} resolves outside the initialized workspace "
+            f"({real_workspace}). Use a path inside the workspace."
+        )
+    return real_target
 
 def get_notebook_content(filepath: str) -> dict:
     """Read a notebook file and return its content."""
