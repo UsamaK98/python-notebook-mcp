@@ -105,44 +105,71 @@ def convert_unix_path(path: str) -> str:
 
 
 def resolve_path(path: str) -> str:
-    """Resolve *path* against WORKSPACE_DIR and enforce the workspace jail.
+    """Resolve *path* to an absolute canonical path inside ``WORKSPACE_DIR``.
 
     Steps:
-    1. Convert Git-Bash / Unix-style drive paths on Windows.
-    2. If the path is relative, join it against WORKSPACE_DIR.
-    3. Canonicalise with Path.resolve() so that ``../`` sequences and symlinks
-       are fully expanded.
-    4. Assert the result sits inside the canonical workspace root.
+    1. Validate that *path* is a non-empty string.
+    2. Convert Git-Bash / Unix-style drive paths on Windows.
+    3. If the path is relative, join it against WORKSPACE_DIR.
+    4. Canonicalise with ``os.path.realpath()`` so that ``../`` sequences and
+       symlinks are fully expanded before the containment check.
+    5. Assert the result sits inside the canonical workspace root using
+       ``os.path.normcase`` (handles Windows case-insensitivity) and
+       ``os.path.commonpath`` (avoids the ``/workspace-evil`` sibling-prefix
+       false-positive of a plain ``startswith`` check).
 
     Raises:
+        ValueError:      if *path* is not a non-empty string.
         PermissionError: if the resolved path escapes the workspace root.
     """
+    # Guard: must be a non-empty string
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("ERROR: a non-empty path string is required.")
+
     # Phase 1.1: single definition that always calls convert_unix_path
     path = convert_unix_path(path)
 
+    # Canonicalise: expand symlinks and ``../`` sequences
     if os.path.isabs(path):
-        candidate = Path(path).resolve()
+        real_target = os.path.realpath(path)
     else:
-        candidate = Path(WORKSPACE_DIR, path).resolve()
+        real_target = os.path.realpath(os.path.join(WORKSPACE_DIR, path))
 
-    # Phase 1.2: enforce workspace jail after initialization
+    # Phase 1.2: enforce workspace jail after initialization.
     # Only active once initialize_workspace() has been called — before that,
     # initialize_workspace() validates the directory directly without going
     # through resolve_path.
     if WORKSPACE_INITIALIZED:
-        workspace_root = Path(WORKSPACE_DIR).resolve()
+        real_workspace = os.path.realpath(WORKSPACE_DIR)
+
+        # os.path.normcase folds case on Windows (NTFS is case-insensitive),
+        # making the check correct regardless of how the caller capitalised the
+        # drive letter or directory components.
+        norm_workspace = os.path.normcase(real_workspace)
+        norm_target = os.path.normcase(real_target)
+
         try:
-            candidate.relative_to(workspace_root)
+            # os.path.commonpath avoids the "/workspace-evil" sibling false-
+            # positive that a naive startswith check would miss.
+            contained = (
+                norm_target == norm_workspace
+                or os.path.commonpath([norm_workspace, norm_target]) == norm_workspace
+            )
         except ValueError:
+            # commonpath raises ValueError on Windows when the paths are on
+            # different drives or mix absolute and relative forms.
+            contained = False
+
+        if not contained:
             raise PermissionError(
-                f"Path '{path}' resolves to '{candidate}' which is outside "
-                f"the workspace root '{workspace_root}'. "
+                f"Path '{path}' resolves to '{real_target}' which is outside "
+                f"the workspace root '{real_workspace}'. "
                 "Absolute paths and traversal sequences (../) that escape the "
                 "workspace are not permitted. "
                 "(Fixes issue #5 — CWE-22 Path Traversal.)"
             )
 
-    return str(candidate)
+    return real_target
 
 
 # ---------------------------------------------------------------------------
