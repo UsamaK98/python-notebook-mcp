@@ -100,6 +100,11 @@ def convert_unix_path(path: str) -> str:
     if match:
         drive_letter = match.group(1).upper()
         remainder = (match.group(2) or "").replace("/", "\\")
+        # /c with no trailing path → C:\ (drive root).
+        # C: without a backslash is NOT treated as absolute by os.path.isabs(),
+        # so we must ensure the root separator is always present.
+        if not remainder:
+            remainder = "\\"
         return f"{drive_letter}:{remainder}"
     return path
 
@@ -199,6 +204,10 @@ def _write_notebook_atomic(nb: nbformat.NotebookNode, resolved_path: str) -> Non
     atomic rename.  On POSIX this is guaranteed atomic; on Windows it is
     best-effort (os.replace replaces atomically on NTFS for same-volume moves).
 
+    If nbformat.write() or os.replace() raises for any reason (permission
+    denied, disk full, cross-filesystem move, serialisation error), the
+    temporary file is deleted so no *.tmp orphans are left in the workspace.
+
     Phase 2.2: ensures a crash or exception during serialisation does not
     leave a partially-written .ipynb file on disk.
     """
@@ -212,10 +221,26 @@ def _write_notebook_atomic(nb: nbformat.NotebookNode, resolved_path: str) -> Non
         encoding="utf-8",
     ) as tmp:
         tmp_path = tmp.name
-        nbformat.write(nb, tmp)
+        try:
+            nbformat.write(nb, tmp)
+        except Exception:
+            # Write failed — close and remove the incomplete temp file
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     # Atomic replace: tmp_path is only promoted to the target once fully written
-    os.replace(tmp_path, resolved_path)
+    try:
+        os.replace(tmp_path, resolved_path)
+    except Exception:
+        # Replace failed — best-effort cleanup of the temp file
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def create_new_notebook(filepath: str, title: str = "New Notebook") -> nbformat.NotebookNode:
@@ -269,8 +294,10 @@ def process_cell_output(output: Any) -> Dict[str, Any]:
         if hasattr(output, "data"):
             for mime, value in output.data.items():
                 if mime in ("image/png", "image/jpeg"):
-                    # Large binary blobs — report size rather than dumping bytes
-                    result["data"][mime] = f"[Base64 encoded image: {len(value)} bytes]"
+                    # Large binary blobs stored as base64 strings in the .ipynb.
+                    # len(value) is the base64 char count, not the decoded byte
+                    # size — label it "chars" to avoid misleading callers.
+                    result["data"][mime] = f"[Base64 encoded image: {len(value)} chars]"
                 else:
                     # text/plain, text/html, text/latex, image/svg+xml,
                     # application/json, and any future MIME types
