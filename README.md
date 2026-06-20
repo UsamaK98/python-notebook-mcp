@@ -16,6 +16,10 @@
 
 A Model Context Protocol (MCP) server that gives AI assistants (Claude, Cursor, Windsurf, OpenCode, and any MCP-compatible client) deep, intelligent access to Jupyter notebooks. Goes beyond basic read/write to provide **cell execution**, **visualization intelligence**, **data pipeline analysis**, and more — across 43 tools.
 
+<div align="center">
+  <img src="screenshots/tool_overview.png" alt="Python Notebook MCP — 43 Tools across 6 categories" width="900"/>
+</div>
+
 ---
 
 ## What makes this different
@@ -28,6 +32,12 @@ Most notebook MCP servers stop at reading and writing `.ipynb` files. This serve
 | **Visualization Intelligence** | Instead of returning `[Base64 image]`, the server **describes** what a chart shows: type, axes, title, data variables, library — so LLMs understand the output without seeing it |
 | **Browser Visualization** | Open any plot in a local browser window on demand — interactive Plotly/Bokeh charts served as live HTML |
 | **Notebook Intelligence** | Static analysis of data pipelines, error diagnostics with fix hints, notebook summarization — no kernel needed |
+
+<div align="center">
+  <img src="screenshots/viz_intelligence.png" alt="Visualization Intelligence — LLMs understand charts without seeing them" width="800"/>
+  <br/>
+  <em>describe_visualization extracts chart type, axes, title, and data variables from source code — no image processing needed</em>
+</div>
 
 ---
 
@@ -253,31 +263,47 @@ analyze_cell_error("analysis.ipynb", cell_index=7)
 | `analyze_cell_error` | Parse a stored error traceback, identify the error type, locate the failing line, and return a diagnostic hint with a suggested fix. |
 | `inspect_dataframe_output` | Extract DataFrame metadata (columns, shape, row count) from a cell's stored HTML output — no kernel required. |
 
+<div align="center">
+  <img src="screenshots/pipeline_analysis.png" alt="Data Pipeline Analysis — static data flow analysis across cells" width="900"/>
+  <br/>
+  <em>get_notebook_pipeline traces variable flow between cells, identifying imports, transforms, and visualizations</em>
+</div>
+
+<div align="center">
+  <img src="screenshots/error_analysis.png" alt="Error Analysis — diagnose errors with fix suggestions" width="800"/>
+  <br/>
+  <em>analyze_cell_error parses tracebacks, locates the failing line, and suggests fixes</em>
+</div>
+
 ---
 
 ## Architecture
 
+<div align="center">
+  <img src="screenshots/architecture.png" alt="Architecture — server.py entry point with notebook_mcp package modules" width="800"/>
+</div>
+
 ```
-server.py                     ← MCP entry point (43 tool registrations)
+server.py                       # MCP entry point (43 tool registrations)
 notebook_mcp/
-├── config.py                 ← Global workspace state
-├── security.py               ← CWE-22 path traversal protection
-├── core/
-│   ├── notebook_io.py        ← Read/write/atomic + output processing
-│   ├── cell_ops.py           ← delete/move/split/merge/bulk_add/clear
-│   └── search.py             ← search/outline/info/validate/export
-├── execution/
-│   ├── kernel.py             ← KernelManager lifecycle (one per notebook)
-│   └── executor.py           ← execute_cell/range/all, variable inspection
-├── visualization/
-│   ├── detector.py           ← Identify viz cells, detect library/chart type
-│   ├── describer.py          ← Code-aware plot description generator
-│   ├── image_handler.py      ← Base64 image extraction + Pillow resize
-│   └── viz_server.py         ← On-demand stdlib HTTP server (no extra deps)
-└── intelligence/
-    ├── summarizer.py         ← Notebook summarization (static analysis)
-    ├── pipeline.py           ← Data-flow DAG extraction
-    └── data_inspector.py     ← Error analysis + DataFrame output parsing
+  config.py                     # Global workspace state
+  security.py                   # CWE-22 path traversal protection
+  core/
+    notebook_io.py              # Read/write/atomic + output processing
+    cell_ops.py                 # delete/move/split/merge/bulk_add/clear
+    search.py                   # search/outline/info/validate/export
+  execution/
+    kernel.py                   # KernelManager lifecycle (one per notebook)
+    executor.py                 # execute_cell/range/all, variable inspection
+  visualization/
+    detector.py                 # Identify viz cells, detect library/chart type
+    describer.py                # Code-aware plot description generator
+    image_handler.py            # Base64 image extraction + Pillow resize
+    viz_server.py               # On-demand stdlib HTTP server (no extra deps)
+  intelligence/
+    summarizer.py               # Notebook summarization (static analysis)
+    pipeline.py                 # Data-flow DAG extraction
+    data_inspector.py           # Error analysis + DataFrame output parsing
 ```
 
 **Optional dependency map:**
