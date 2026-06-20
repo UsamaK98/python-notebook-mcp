@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-notebook-mcp"
+version = "2.0.0"
+description = "Advanced AI-powered Jupyter notebook MCP server with execution, visualization intelligence, and notebook analysis"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{ name = "Usama Khatab" }]
+requires-python = ">=3.10"
+keywords = ["jupyter", "notebook", "mcp", "ai", "llm", "visualization"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+# Core dependencies only (always required)
+dependencies = [
+    "fastmcp>=0.1.0",
+    "nbformat>=5.7.0",
+]
+
+[project.optional-dependencies]
+# Cell execution via Jupyter kernel
+execution = [
+    "jupyter_client>=8.0",
+    "ipykernel>=6.0",
+]
+
+# Image processing (resize/compress visualizations)
+imaging = [
+    "Pillow>=10.0",
+]
+
+# Notebook export to other formats
+export = [
+    "nbconvert>=7.0",
+]
+
+# Full install with all optional features
+full = [
+    "python-notebook-mcp[execution,imaging,export]",
+]
+
+# Development and testing
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-timeout>=2.0",
+    "nbconvert>=7.0",
+]
+
+[project.scripts]
+notebook-mcp = "server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["notebook_mcp*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
